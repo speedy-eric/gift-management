@@ -58,6 +58,8 @@ def get_inventory():
 @app.route('/api/inventory/<int:gift_id>', methods=['PUT'])
 def update_inventory(gift_id):
     data = request.get_json()
+    if data is None:
+        return jsonify({'error': '잘못된 요청'}), 400
     conn = get_db()
     conn.execute(
         'UPDATE gifts SET total_qty=?, remaining_qty=? WHERE id=?',
@@ -88,6 +90,8 @@ def get_records():
 @app.route('/api/records', methods=['POST'])
 def add_record():
     data = request.get_json()
+    if data is None:
+        return jsonify({'error': '잘못된 요청'}), 400
     conn = get_db()
 
     # 잔여 수량 확인
@@ -117,6 +121,8 @@ def add_record():
 @app.route('/api/records/<int:record_id>', methods=['PUT'])
 def update_record(record_id):
     data = request.get_json()
+    if data is None:
+        return jsonify({'error': '잘못된 요청'}), 400
     conn = get_db()
 
     old = conn.execute(
@@ -174,5 +180,5 @@ def index():
 
 if __name__ == '__main__':
     init_db()
-    print("✅ 서버 시작: http://localhost:5000")
+    print("서버 시작: http://localhost:5000")
     app.run(host='0.0.0.0', port=5000, debug=False)

@@ -38,7 +38,7 @@ def import_csv(filepath):
 
             # 날짜 정규화 (1-22 → 2026-01-22)
             raw_date = row.get('날짜', '').strip()
-            if len(raw_date) <= 4 and '-' in raw_date:
+            if raw_date.count('-') == 1 and len(raw_date) <= 5:
                 m, d = raw_date.split('-')
                 date = f"2026-{int(m):02d}-{int(d):02d}"
             else:

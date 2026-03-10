@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스피디 기프트 관리</title>
+  <style>
+    /* ── 기본 레이아웃 ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f6fa; color: #333; }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 600; }
+    header .logo { font-size: 1.5rem; }
+
+    /* ── 탭 ── */
+    .tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid #e0e0e0;
+      padding: 0 24px;
+    }
+    .tab-btn {
+      padding: 14px 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { color: #1a1a2e; border-bottom-color: #e63946; font-weight: 600; }
+    .tab-btn:hover:not(.active) { color: #333; }
+
+    .tab-content { display: none; padding: 24px; max-width: 900px; margin: 0 auto; }
+    .tab-content.active { display: block; }
+
+    /* ── 카드 ── */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1rem; margin-bottom: 18px; color: #1a1a2e; }
+
+    /* ── 폼 ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; color: #555; font-weight: 500; }
+    .form-group input, .form-group select {
+      padding: 10px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #1a1a2e;
+    }
+    .btn-submit {
+      margin-top: 20px;
+      width: 100%;
+      padding: 13px;
+      background: #e63946;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover { background: #c1121f; }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* ── 재고 현황 ── */
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .inv-item { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .inv-item .item-name { font-weight: 600; margin-bottom: 8px; color: #1a1a2e; }
+    .inv-item .item-nums { font-size: 0.85rem; color: #666; margin-bottom: 8px; }
+    .progress-bar { height: 10px; background: #e9ecef; border-radius: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+    .fill-ok   { background: #2ecc71; }
+    .fill-warn { background: #f39c12; }
+    .fill-low  { background: #e63946; }
+
+    /* ── 테이블 ── */
+    .search-bar {
+      display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .search-bar input {
+      flex: 1; min-width: 160px;
+      padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-size: 0.9rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: #f0f0f5; padding: 10px 12px; text-align: left; font-weight: 600; color: #555; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+    tr:hover td { background: #fafafa; }
+    .btn-sm {
+      padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer;
+    }
+    .btn-edit   { background: #3498db; color: #fff; margin-right: 4px; }
+    .btn-delete { background: #e63946; color: #fff; }
+    .btn-sm:hover { opacity: 0.85; }
+
+    /* ── 알림 ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1a1a2e; color: #fff;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 0.9rem; opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── 모달 ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 12px; padding: 28px;
+      width: 440px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .modal h3 { margin-bottom: 18px; color: #1a1a2e; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancel {
+      flex: 1; padding: 10px; background: #f0f0f0; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 0.95rem;
+    }
+    .btn-save {
+      flex: 1; padding: 10px; background: #1a1a2e; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid, .inventory-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🎁</span>
+  <h1>스피디 기프트 관리</h1>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="switchTab('input', this)">반출 입력</button>
+  <button class="tab-btn" onclick="switchTab('inventory', this)">재고 현황</button>
+  <button class="tab-btn" onclick="switchTab('records', this)">전체 기록</button>
+</nav>
+
+<!-- ── 반출 입력 탭 ── -->
+<div id="tab-input" class="tab-content active">
+  <div class="card">
+    <h2>기프트 반출 등록</h2>
+    <form id="addForm" onsubmit="submitRecord(event)">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>날짜</label>
+          <input type="date" id="f-date" required>
+        </div>
+        <div class="form-group">
+          <label>담당자</label>
+          <input type="text" id="f-manager" placeholder="이름 입력" required>
+        </div>
+        <div class="form-group">
+          <label>고객사</label>
+          <input type="text" id="f-client" placeholder="고객사명 입력" required>
+        </div>
+        <div class="form-group">
+          <label>기프트 품목</label>
+          <select id="f-gift" required>
+            <option value="">선택하세요</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>수량</label>
+          <input type="number" id="f-qty" min="1" value="1" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-submit">등록하기</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── 재고 현황 탭 ── -->
+<div id="tab-inventory" class="tab-content">
+  <div id="inventoryGrid" class="inventory-grid"></div>
+</div>
+
+<!-- ── 전체 기록 탭 ── -->
+<div id="tab-records" class="tab-content">
+  <div class="card">
+    <div class="search-bar">
+      <input type="text" id="searchText" placeholder="담당자 또는 고객사 검색" oninput="filterRecords()">
+      <input type="date" id="searchFrom" onchange="filterRecords()">
+      <span style="line-height:38px">~</span>
+      <input type="date" id="searchTo" onchange="filterRecords()">
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>날짜</th><th>담당자</th><th>고객사</th>
+            <th>품목</th><th>수량</th><th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── 수정 모달 ── -->
+<div id="editModal" class="modal-overlay">
+  <div class="modal">
+    <h3>기록 수정</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>날짜</label>
+        <input type="date" id="e-date">
+      </div>
+      <div class="form-group">
+        <label>담당자</label>
+        <input type="text" id="e-manager">
+      </div>
+      <div class="form-group">
+        <label>고객사</label>
+        <input type="text" id="e-client">
+      </div>
+      <div class="form-group">
+        <label>기프트 품목</label>
+        <select id="e-gift"></select>
+      </div>
+      <div class="form-group">
+        <label>수량</label>
+        <input type="number" id="e-qty" min="1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 알림 토스트 ── -->
+<div id="toast"></div>
+
+<script>
+  // ── 상태 ──────────────────────────────────────────────
+  let allRecords = [];
+  let gifts = [];
+  let editingId = null;
+
+  // ── 초기화 ────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('f-date').value = today();
+    loadGifts();
+    loadRecords();
+  });
+
+  function today() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  // ── 탭 전환 ──────────────────────────────────────────
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'inventory') loadInventory();
+    if (name === 'records') loadRecords();
+  }
+
+  // ── API helpers ───────────────────────────────────────
+  async function api(method, path, body) {
+    const res = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return res.json();
+  }
+
+  // ── 기프트 목록 로드 (드롭다운용) ────────────────────
+  async function loadGifts() {
+    gifts = await api('GET', '/api/inventory');
+    populateGiftSelect('f-gift');
+    populateGiftSelect('e-gift');
+  }
+
+  function populateGiftSelect(id) {
+    const sel = document.getElementById(id);
+    const current = sel.value;
+    const placeholder = sel.querySelector('option[value=""]');
+    sel.innerHTML = '';
+    if (placeholder) sel.appendChild(placeholder);
+    gifts.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name + ' (잔여 ' + g.remaining_qty + '개)';
+      sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+  }
+
+  // ── 반출 등록 ─────────────────────────────────────────
+  async function submitRecord(e) {
+    e.preventDefault();
+    const btn = document.querySelector('.btn-submit');
+    btn.disabled = true;
+    const data = {
+      date: document.getElementById('f-date').value,
+      manager: document.getElementById('f-manager').value.trim(),
+      client: document.getElementById('f-client').value.trim(),
+      gift_id: parseInt(document.getElementById('f-gift').value),
+      quantity: parseInt(document.getElementById('f-qty').value),
+    };
+    const res = await api('POST', '/api/records', data);
+    btn.disabled = false;
+    if (res.error) {
+      showToast('오류: ' + res.error);
+    } else {
+      showToast('등록 완료!');
+      document.getElementById('addForm').reset();
+      document.getElementById('f-date').value = today();
+      loadGifts();
+    }
+  }
+
+  // ── 재고 현황 ─────────────────────────────────────────
+  async function loadInventory() {
+    const data = await api('GET', '/api/inventory');
+    const grid = document.getElementById('inventoryGrid');
+    grid.innerHTML = data.map(g => {
+      const pct = g.total_qty > 0 ? Math.round(g.remaining_qty / g.total_qty * 100) : 0;
+      const cls = pct > 50 ? 'fill-ok' : pct > 20 ? 'fill-warn' : 'fill-low';
+      return '<div class="inv-item">' +
+        '<div class="item-name">' + g.name + '</div>' +
+        '<div class="item-nums">잔여 <strong>' + g.remaining_qty + '</strong> / 전체 ' + g.total_qty + '개</div>' +
+        '<div class="progress-bar"><div class="progress-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
+        '</div>';
+    }).join('');
+  }
+
+  // ── 전체 기록 ─────────────────────────────────────────
+  async function loadRecords() {
+    allRecords = await api('GET', '/api/records');
+    filterRecords();
+  }
+
+  function filterRecords() {
+    const text = document.getElementById('searchText').value.toLowerCase();
+    const from = document.getElementById('searchFrom').value;
+    const to = document.getElementById('searchTo').value;
+
+    const filtered = allRecords.filter(r => {
+      const matchText = !text ||
+        r.manager.toLowerCase().includes(text) ||
+        r.client.toLowerCase().includes(text);
+      const matchFrom = !from || r.date >= from;
+      const matchTo = !to || r.date <= to;
+      return matchText && matchFrom && matchTo;
+    });
+    renderTable(filtered);
+  }
+
+  function renderTable(rows) {
+    const tbody = document.getElementById('recordsBody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px">기록이 없습니다</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' +
+      '<td>' + r.id + '</td>' +
+      '<td>' + r.date + '</td>' +
+      '<td>' + r.manager + '</td>' +
+      '<td>' + r.client + '</td>' +
+      '<td>' + r.gift_name + '</td>' +
+      '<td>' + r.quantity + '</td>' +
+      '<td>' +
+        '<button class="btn-sm btn-edit" onclick="openEdit(' + r.id + ')">수정</button>' +
+        '<button class="btn-sm btn-delete" onclick="deleteRecord(' + r.id + ')">삭제</button>' +
+      '</td>' +
+      '</tr>'
+    ).join('');
+  }
+
+  // ── 수정 모달 ─────────────────────────────────────────
+  function openEdit(id) {
+    const r = allRecords.find(x => x.id === id);
+    if (!r) return;
+    editingId = id;
+    document.getElementById('e-date').value = r.date;
+    document.getElementById('e-manager').value = r.manager;
+    document.getElementById('e-client').value = r.client;
+    document.getElementById('e-gift').value = r.gift_id;
+    document.getElementById('e-qty').value = r.quantity;
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('editModal').classList.remove('open');
+    editingId = null;
+  }
+
+  async function saveEdit() {
+    const data = {
+      date: document.getElementById('e-date').value,
+      manager: document.getElementById('e-manager').value.trim(),
+      client: document.getElementById('e-client').value.trim(),
+      gift_id: parseInt(document.getElementById('e-gift').value),
+      quantity: parseInt(document.getElementById('e-qty').value),
+    };
+    await api('PUT', '/api/records/' + editingId, data);
+    closeModal();
+    showToast('수정 완료!');
+    loadGifts();
+    loadRecords();
+  }
+
+  // ── 삭제 ─────────────────────────────────────────────
+  async function deleteRecord(id) {
+    if (!confirm('이 기록을 삭제할까요?')) return;
+    await api('DELETE', '/api/records/' + id);
+    showToast('삭제 완료');
+    loadGifts();
+    loadRecords();
+  }
+
+  // ── 토스트 알림 ───────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+
+</body>
+</html>
