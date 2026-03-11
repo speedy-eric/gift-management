@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스피디 기프트 관리</title>
+  <style>
+    /* ── 기본 레이아웃 ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f6fa; color: #333; }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 600; }
+    header .logo { font-size: 1.5rem; }
+
+    /* ── 탭 ── */
+    .tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid #e0e0e0;
+      padding: 0 24px;
+    }
+    .tab-btn {
+      padding: 14px 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { color: #1a1a2e; border-bottom-color: #e63946; font-weight: 600; }
+    .tab-btn:hover:not(.active) { color: #333; }
+
+    .tab-content { display: none; padding: 24px; max-width: 900px; margin: 0 auto; }
+    .tab-content.active { display: block; }
+
+    /* ── 카드 ── */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1rem; margin-bottom: 18px; color: #1a1a2e; }
+
+    /* ── 폼 ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; color: #555; font-weight: 500; }
+    .form-group input, .form-group select {
+      padding: 10px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #1a1a2e;
+    }
+    .btn-submit {
+      margin-top: 20px;
+      width: 100%;
+      padding: 13px;
+      background: #e63946;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover { background: #c1121f; }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* ── 품목 행 ── */
+    .items-section { margin-top: 16px; }
+    .items-label { font-size: 0.85rem; color: #555; font-weight: 500; margin-bottom: 8px; display: block; }
+    .item-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 32px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .item-row select, .item-row input {
+      padding: 10px 12px;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .item-row select:focus, .item-row input:focus { outline: none; border-color: #1a1a2e; }
+    .btn-remove-row {
+      background: #e63946; color: #fff; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 1.1rem;
+      height: 38px; width: 32px; line-height: 1;
+    }
+    .btn-remove-row:hover { background: #c1121f; }
+    .btn-add-row {
+      width: 100%; margin-top: 4px; padding: 9px;
+      background: #f5f6fa; border: 1.5px dashed #ccc;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.85rem; color: #666;
+    }
+    .btn-add-row:hover:not(:disabled) { background: #ebebf0; }
+    .btn-add-row:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── 재고 현황 ── */
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .inv-item { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .img-wrap {
+      position: relative; margin-bottom: 10px; border-radius: 6px; overflow: hidden;
+      cursor: zoom-in;
+    }
+    .gift-img {
+      width: 100%; height: 140px; object-fit: cover;
+      border-radius: 6px; display: block;
+      transition: opacity 0.2s;
+    }
+    .img-wrap:hover .gift-img { opacity: 0.82; }
+    .img-zoom-icon {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 1; pointer-events: none;
+    }
+    .img-zoom-icon span {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(0,0,0,0.45);
+    }
+    .img-zoom-icon svg {
+      width: 18px; height: 18px;
+    }
+    .inv-item .item-name { font-weight: 600; margin-bottom: 8px; color: #1a1a2e; }
+    .inv-item .item-nums { font-size: 0.85rem; color: #666; margin-bottom: 8px; }
+    .progress-bar { height: 10px; background: #e9ecef; border-radius: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+    .fill-ok   { background: #2ecc71; }
+    .fill-warn { background: #f39c12; }
+    .fill-low  { background: #e63946; }
+
+    /* ── 이미지 확대 오버레이 ── */
+    #imgOverlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8); z-index: 2000;
+      align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    #imgOverlay.show { display: flex; }
+    #imgOverlay img {
+      max-width: 80vw; max-height: 80vh;
+      object-fit: contain; border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── 비밀번호 모달 ── */
+    .pw-input {
+      width: 100%; padding: 10px 12px; margin-top: 10px;
+      border: 1.5px solid #ddd; border-radius: 6px; font-size: 0.95rem;
+    }
+    .pw-input:focus { outline: none; border-color: #1a1a2e; }
+    .pw-error { color: #e63946; font-size: 0.85rem; margin-top: 6px; display: none; }
+
+    /* ── 테이블 ── */
+    .search-bar {
+      display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .search-bar input {
+      flex: 1; min-width: 160px;
+      padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-size: 0.9rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: #f0f0f5; padding: 10px 12px; text-align: left; font-weight: 600; color: #555; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+    tr:hover td { background: #fafafa; }
+    .btn-sm {
+      padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer;
+    }
+    .btn-edit   { background: #3498db; color: #fff; margin-right: 4px; }
+    .btn-delete { background: #e63946; color: #fff; }
+    .btn-sm:hover { opacity: 0.85; }
+
+    /* ── 알림 ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1a1a2e; color: #fff;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 0.9rem; opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── 모달 ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 12px; padding: 28px;
+      width: 440px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .modal h3 { margin-bottom: 18px; color: #1a1a2e; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancel {
+      flex: 1; padding: 10px; background: #f0f0f0; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 0.95rem;
+    }
+    .btn-save {
+      flex: 1; padding: 10px; background: #1a1a2e; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid, .inventory-grid { grid-template-columns: 1fr; }
+      .item-row { grid-template-columns: 1fr 70px 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🎁</span>
+  <h1>스피디 기프트 관리</h1>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="switchTab('input', this)">반출 입력</button>
+  <button class="tab-btn" onclick="switchTab('inventory', this)">재고 현황</button>
+  <button class="tab-btn" onclick="switchTab('records', this)">전체 기록</button>
+</nav>
+
+<!-- ── 반출 입력 탭 ── -->
+<div id="tab-input" class="tab-content active">
+  <div class="card">
+    <h2>기프트 반출 등록</h2>
+    <form id="addForm" onsubmit="submitRecord(event)">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>날짜</label>
+          <input type="date" id="f-date" required>
+        </div>
+        <div class="form-group">
+          <label>담당자</label>
+          <input type="text" id="f-manager" placeholder="이름 입력" required>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>고객사</label>
+          <input type="text" id="f-client" placeholder="고객사명 입력" required>
+        </div>
+      </div>
+      <div class="items-section">
+        <span class="items-label">기프트 품목 (최대 4개)</span>
+        <div id="itemRows"></div>
+        <button type="button" class="btn-add-row" id="btnAddRow" onclick="addItemRow()">+ 품목 추가</button>
+      </div>
+      <button type="submit" class="btn-submit">등록하기</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── 재고 현황 탭 ── -->
+<div id="tab-inventory" class="tab-content">
+  <div id="inventoryGrid" class="inventory-grid"></div>
+</div>
+
+<!-- ── 전체 기록 탭 ── -->
+<div id="tab-records" class="tab-content">
+  <div class="card">
+    <div class="search-bar">
+      <input type="text" id="searchText" placeholder="담당자 또는 고객사 검색" oninput="filterRecords()">
+      <input type="date" id="searchFrom" onchange="filterRecords()">
+      <span style="line-height:38px">~</span>
+      <input type="date" id="searchTo" onchange="filterRecords()">
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>날짜</th><th>담당자</th><th>고객사</th>
+            <th>품목</th><th>수량</th><th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── 수정 모달 ── -->
+<div id="editModal" class="modal-overlay">
+  <div class="modal">
+    <h3>기록 수정</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>날짜</label>
+        <input type="date" id="e-date">
+      </div>
+      <div class="form-group">
+        <label>담당자</label>
+        <input type="text" id="e-manager">
+      </div>
+      <div class="form-group">
+        <label>고객사</label>
+        <input type="text" id="e-client">
+      </div>
+      <div class="form-group">
+        <label>기프트 품목</label>
+        <select id="e-gift"></select>
+      </div>
+      <div class="form-group">
+        <label>수량</label>
+        <input type="number" id="e-qty" min="1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 비밀번호 모달 ── -->
+<div id="pwModal" class="modal-overlay">
+  <div class="modal">
+    <h3>관리자 확인</h3>
+    <p style="font-size:0.9rem;color:#666">수정/삭제하려면 비밀번호를 입력하세요.</p>
+    <input type="password" id="pwInput" class="pw-input" placeholder="비밀번호"
+      onkeydown="if(event.key==='Enter')confirmPw()">
+    <div id="pwError" class="pw-error">비밀번호가 올바르지 않습니다.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePwModal()">취소</button>
+      <button class="btn-save" onclick="confirmPw()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 이미지 확대 오버레이 ── -->
+<div id="imgOverlay">
+  <img id="imgOverlayImg" src="" alt="">
+</div>
+
+<!-- ── 알림 토스트 ── -->
+<div id="toast"></div>
+
+<script>
+  // ── Supabase REST API (SDK 없이 직접 호출) ──────────────
+  const API = 'https://xvuywroypwfcuocbdaiu.supabase.co/rest/v1';
+  const KEY = 'sb_publishable_ZPC_DwS4DFJeFUo6yijE5g_NIKw1oKH';
+  const HEADERS = {
+    'apikey': KEY,
+    'Authorization': 'Bearer ' + KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+
+  async function dbGet(table, query) {
+    const res = await fetch(API + '/' + table + '?' + (query || ''), { headers: HEADERS });
+    return res.json();
+  }
+  async function dbPost(table, body) {
+    const res = await fetch(API + '/' + table, { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
+    return res.json();
+  }
+  async function dbPatch(table, query, body) {
+    const res = await fetch(API + '/' + table + '?' + query, { method: 'PATCH', headers: HEADERS, body: JSON.stringify(body) });
+    return res.json();
+  }
+  async function dbDelete(table, query) {
+    await fetch(API + '/' + table + '?' + query, { method: 'DELETE', headers: HEADERS });
+  }
+
+  // ── 상태 ──────────────────────────────────────────────
+  let allRecords = [];
+  let gifts = [];
+  let editingId = null;
+  let rowIds = [];
+  const ADMIN_PW = 'tmvlel123';
+  let pendingAction = null;
+
+  // ── 초기화 ────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('f-date').value = today();
+    await loadGifts();
+    addItemRow();
+    loadRecords();
+  });
+
+  function today() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  // ── 탭 전환 ──────────────────────────────────────────
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'inventory') loadInventory();
+    if (name === 'records') loadRecords();
+  }
+
+  // ── 기프트 목록 로드 ──────────────────────────────────
+  async function loadGifts() {
+    try {
+      gifts = await dbGet('gifts', 'select=*&order=id');
+    } catch(e) { console.error('loadGifts 오류:', e); return; }
+    refreshAllGiftSelects();
+    populateGiftSelect('e-gift');
+  }
+
+  function populateGiftSelect(id) {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">선택하세요</option>';
+    gifts.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name + ' (잔여 ' + g.remaining_qty + '개)';
+      sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+  }
+
+  // ── 품목 행 관리 ──────────────────────────────────────
+  function addItemRow() {
+    if (rowIds.length >= 4) return;
+    const id = Date.now();
+    rowIds.push(id);
+
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.id = 'row-' + id;
+
+    const sel = document.createElement('select');
+    sel.id = 'gift-' + id;
+    sel.required = true;
+    sel.innerHTML = '<option value="">품목 선택</option>';
+    gifts.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name + ' (잔여 ' + g.remaining_qty + '개)';
+      sel.appendChild(opt);
+    });
+
+    const qty = document.createElement('input');
+    qty.type = 'number';
+    qty.id = 'qty-' + id;
+    qty.min = 1;
+    qty.value = '';
+    qty.required = true;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-remove-row';
+    removeBtn.textContent = '×';
+    removeBtn.onclick = () => removeItemRow(id);
+
+    row.appendChild(sel);
+    row.appendChild(qty);
+    if (rowIds.length > 1) {
+      row.appendChild(removeBtn);
+    } else {
+      row.appendChild(document.createElement('span'));
+    }
+
+    document.getElementById('itemRows').appendChild(row);
+    document.getElementById('btnAddRow').disabled = rowIds.length >= 4;
+  }
+
+  function removeItemRow(id) {
+    document.getElementById('row-' + id).remove();
+    rowIds = rowIds.filter(x => x !== id);
+    document.getElementById('btnAddRow').disabled = false;
+  }
+
+  function refreshAllGiftSelects() {
+    rowIds.forEach(id => {
+      const sel = document.getElementById('gift-' + id);
+      if (!sel) return;
+      const current = sel.value;
+      sel.innerHTML = '<option value="">품목 선택</option>';
+      gifts.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.name + ' (잔여 ' + g.remaining_qty + '개)';
+        sel.appendChild(opt);
+      });
+      if (current) sel.value = current;
+    });
+  }
+
+  // ── 반출 등록 ─────────────────────────────────────────
+  async function submitRecord(e) {
+    e.preventDefault();
+    const btn = document.querySelector('.btn-submit');
+    btn.disabled = true;
+
+    const date = document.getElementById('f-date').value;
+    const manager = document.getElementById('f-manager').value.trim();
+    const client = document.getElementById('f-client').value.trim();
+
+    let successCount = 0;
+    const errors = [];
+
+    for (const id of rowIds) {
+      const gift_id = parseInt(document.getElementById('gift-' + id).value);
+      const quantity = parseInt(document.getElementById('qty-' + id).value);
+      if (!gift_id || !quantity) continue;
+
+      try {
+        await dbPost('records', { date, manager, client, gift_id, quantity });
+        const gift = gifts.find(g => g.id === gift_id);
+        if (gift) {
+          await dbPatch('gifts', 'id=eq.' + gift_id, { remaining_qty: gift.remaining_qty - quantity });
+        }
+        successCount++;
+      } catch(err) {
+        errors.push(err.message);
+      }
+    }
+
+    btn.disabled = false;
+
+    if (errors.length) {
+      showToast('오류: ' + errors.join(', '));
+    } else {
+      showToast(successCount + '건 등록 완료!');
+      document.getElementById('f-manager').value = '';
+      document.getElementById('f-client').value = '';
+      document.getElementById('f-date').value = today();
+      document.getElementById('itemRows').innerHTML = '';
+      rowIds = [];
+      await loadGifts();
+      addItemRow();
+    }
+  }
+
+  // ── 재고 현황 ─────────────────────────────────────────
+  async function loadInventory() {
+    let data;
+    try {
+      data = await dbGet('gifts', 'select=*&order=id');
+    } catch(e) { console.error(e); return; }
+    const grid = document.getElementById('inventoryGrid');
+    grid.innerHTML = data.map(g => {
+      const pct = g.total_qty > 0 ? Math.round(g.remaining_qty / g.total_qty * 100) : 0;
+      const cls = pct > 50 ? 'fill-ok' : pct > 20 ? 'fill-warn' : 'fill-low';
+      return '<div class="inv-item" onmouseleave="hideImgPreview()">' +
+        '<div class="img-wrap" onmouseover="showImgPreview(this.querySelector(\'img\').src)">' +
+          '<img src="images/' + g.name + '.jpg" class="gift-img" ' +
+            'onerror="this.src=\'images/' + g.name + '.png\';this.onerror=function(){this.closest(\'.img-wrap\').style.display=\'none\'}" ' +
+            'alt="' + g.name + '">' +
+          '<div class="img-zoom-icon">' +
+            '<span>' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<circle cx="11" cy="11" r="7"/>' +
+                '<line x1="16.5" y1="16.5" x2="22" y2="22"/>' +
+                '<line x1="11" y1="8" x2="11" y2="14"/>' +
+                '<line x1="8" y1="11" x2="14" y2="11"/>' +
+              '</svg>' +
+            '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="item-name">' + g.name + '</div>' +
+        '<div class="item-nums">잔여 <strong>' + g.remaining_qty + '</strong> / 전체 ' + g.total_qty + '개</div>' +
+        '<div class="progress-bar"><div class="progress-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
+        '</div>';
+    }).join('');
+  }
+
+  // ── 이미지 확대 미리보기 ───────────────────────────────
+  function showImgPreview(src) {
+    const overlay = document.getElementById('imgOverlay');
+    document.getElementById('imgOverlayImg').src = src;
+    overlay.classList.add('show');
+  }
+
+  function hideImgPreview() {
+    document.getElementById('imgOverlay').classList.remove('show');
+  }
+
+  // ── 전체 기록 ─────────────────────────────────────────
+  async function loadRecords() {
+    try {
+      const data = await dbGet('records', 'select=*,gifts(name)&order=id.desc');
+      allRecords = data.map(r => ({
+        id: r.id,
+        date: r.date,
+        manager: r.manager,
+        client: r.client,
+        gift_id: r.gift_id,
+        gift_name: r.gifts ? r.gifts.name : '',
+        quantity: r.quantity,
+      }));
+    } catch(e) { console.error('loadRecords 오류:', e); allRecords = []; }
+    filterRecords();
+  }
+
+  function filterRecords() {
+    const text = document.getElementById('searchText').value.toLowerCase();
+    const from = document.getElementById('searchFrom').value;
+    const to = document.getElementById('searchTo').value;
+
+    const filtered = allRecords.filter(r => {
+      const matchText = !text ||
+        r.manager.toLowerCase().includes(text) ||
+        r.client.toLowerCase().includes(text);
+      const matchFrom = !from || r.date >= from;
+      const matchTo = !to || r.date <= to;
+      return matchText && matchFrom && matchTo;
+    });
+    renderTable(filtered);
+  }
+
+  function renderTable(rows) {
+    const tbody = document.getElementById('recordsBody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;padding:24px">기록이 없습니다</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' +
+      '<td>' + r.id + '</td>' +
+      '<td>' + r.date + '</td>' +
+      '<td>' + r.manager + '</td>' +
+      '<td>' + r.client + '</td>' +
+      '<td>' + r.gift_name + '</td>' +
+      '<td>' + r.quantity + '</td>' +
+      '<td>' +
+        '<button class="btn-sm btn-edit" onclick="openEdit(' + r.id + ')">수정</button>' +
+        '<button class="btn-sm btn-delete" onclick="deleteRecord(' + r.id + ')">삭제</button>' +
+      '</td>' +
+      '</tr>'
+    ).join('');
+  }
+
+  // ── 비밀번호 모달 ─────────────────────────────────────
+  function requirePw(action) {
+    pendingAction = action;
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwError').style.display = 'none';
+    document.getElementById('pwModal').classList.add('open');
+    setTimeout(() => document.getElementById('pwInput').focus(), 100);
+  }
+
+  function confirmPw() {
+    if (document.getElementById('pwInput').value === ADMIN_PW) {
+      const action = pendingAction;
+      closePwModal();
+      if (action) action();
+    } else {
+      document.getElementById('pwError').style.display = 'block';
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwInput').focus();
+    }
+  }
+
+  function closePwModal() {
+    document.getElementById('pwModal').classList.remove('open');
+    pendingAction = null;
+  }
+
+  // ── 수정 모달 ─────────────────────────────────────────
+  function openEdit(id) {
+    requirePw(() => _openEdit(id));
+  }
+
+  function _openEdit(id) {
+    const r = allRecords.find(x => x.id === id);
+    if (!r) return;
+    editingId = id;
+    document.getElementById('e-date').value = r.date;
+    document.getElementById('e-manager').value = r.manager;
+    document.getElementById('e-client').value = r.client;
+    document.getElementById('e-gift').value = r.gift_id;
+    document.getElementById('e-qty').value = r.quantity;
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('editModal').classList.remove('open');
+    editingId = null;
+  }
+
+  async function saveEdit() {
+    const newGiftId = parseInt(document.getElementById('e-gift').value);
+    const newQty = parseInt(document.getElementById('e-qty').value);
+    const oldRecord = allRecords.find(x => x.id === editingId);
+
+    // 기존 기프트 잔여 수량 복원
+    if (oldRecord) {
+      const oldGift = gifts.find(g => g.id === oldRecord.gift_id);
+      if (oldGift) {
+        await dbPatch('gifts', 'id=eq.' + oldRecord.gift_id, { remaining_qty: oldGift.remaining_qty + oldRecord.quantity });
+      }
+    }
+
+    // 새 기프트 잔여 수량 차감
+    const freshGifts = await dbGet('gifts', 'select=*');
+    const newGift = freshGifts.find(g => g.id === newGiftId);
+    if (newGift) {
+      await dbPatch('gifts', 'id=eq.' + newGiftId, { remaining_qty: newGift.remaining_qty - newQty });
+    }
+
+    // 레코드 업데이트
+    await dbPatch('records', 'id=eq.' + editingId, {
+      date: document.getElementById('e-date').value,
+      manager: document.getElementById('e-manager').value.trim(),
+      client: document.getElementById('e-client').value.trim(),
+      gift_id: newGiftId,
+      quantity: newQty,
+    });
+
+    closeModal();
+    showToast('수정 완료!');
+    loadGifts();
+    loadRecords();
+  }
+
+  // ── 삭제 ─────────────────────────────────────────────
+  function deleteRecord(id) {
+    requirePw(() => _deleteRecord(id));
+  }
+
+  async function _deleteRecord(id) {
+    if (!confirm('이 기록을 삭제할까요?')) return;
+
+    const record = allRecords.find(x => x.id === id);
+
+    // 잔여 수량 복원
+    if (record) {
+      const gift = gifts.find(g => g.id === record.gift_id);
+      if (gift) {
+        await dbPatch('gifts', 'id=eq.' + record.gift_id, { remaining_qty: gift.remaining_qty + record.quantity });
+      }
+    }
+
+    await dbDelete('records', 'id=eq.' + id);
+
+    showToast('삭제 완료');
+    loadGifts();
+    loadRecords();
+  }
+
+  // ── 토스트 알림 ───────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+
+</body>
+</html>
