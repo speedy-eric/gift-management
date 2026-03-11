@@ -69,7 +69,8 @@ def fetchone(conn, sql, params=None):
             cur.execute(sql, params)
         else:
             cur.execute(sql)
-        return dict(cur.fetchone()) if cur.fetchone() is not None else None
+        row = cur.fetchone()
+        return dict(row) if row is not None else None
 
 
 def init_db():
